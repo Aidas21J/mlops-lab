@@ -11,3 +11,7 @@ __pycache__/
 .dvc/cache/
 .dvc/tmp/
 .dvc/config.local
+
+# Ignore (potentially) huge CSV files
+data/**/*.csv
+

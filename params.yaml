@@ -1,0 +1,5 @@
+train:
+  data:
+    repo_id: "cornell-movie-review-data/rotten_tomatoes"
+    commit_hash: "aa13bc287fa6fcab6daf52f0dfb9994269ffea28"
+    raw_data_dir: "./data/raw"
