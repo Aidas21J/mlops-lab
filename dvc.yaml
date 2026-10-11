@@ -1,0 +1,14 @@
+stages:
+  prepare:
+    cmd: python src/prepare.py
+    deps:
+    - src/prepare.py
+    - ${train.data.raw_data_dir}/train.csv
+    - ${train.data.raw_data_dir}/test.csv
+    params:
+    - train.data.raw_data_dir
+    - train.data.processed_data_dir
+    - train.random_state
+    outs:
+    - ${train.data.processed_data_dir}/train.csv
+    - ${train.data.processed_data_dir}/test.csv
