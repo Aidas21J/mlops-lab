@@ -4,7 +4,7 @@ import yaml
 from datasets import load_dataset
 
 
-def main():
+def bootstrap():
     with open("params.yaml") as f:
         params = yaml.safe_load(f)["train"]["data"]
 
@@ -31,4 +31,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    bootstrap()

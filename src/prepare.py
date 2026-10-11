@@ -1,9 +1,9 @@
 import os
 import yaml
-
 import pandas as pd
 
-def main() -> None:
+
+def prepare() -> None:
     with open("params.yaml") as f:
         params = yaml.safe_load(f)["train"]
 
@@ -31,4 +31,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    prepare()

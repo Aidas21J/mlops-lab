@@ -5,3 +5,7 @@ train:
     raw_data_dir: "./data/raw"
     processed_data_dir: "./data/processed"
   random_state: 42
+  C: 1.0
+  max_features: 10000
+  model_dir: "models"
+  metrics_dir: "metrics"
