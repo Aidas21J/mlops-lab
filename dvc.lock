@@ -1,0 +1,87 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python src/prepare.py
+    deps:
+    - path: ./data/raw/test.csv
+      hash: md5
+      md5: bdd89527e74e50507d71c201564fb56b
+      size: 127723
+    - path: ./data/raw/train.csv
+      hash: md5
+      md5: 4782f1c55edc58d69e7a1a52cdfe0d87
+      size: 1008607
+    - path: src/prepare.py
+      hash: md5
+      md5: 440eb703d1093b8ba70e8ba104603cba
+      size: 914
+    params:
+      params.yaml:
+        train.data.processed_data_dir: ./data/processed
+        train.data.raw_data_dir: ./data/raw
+        train.random_state: 42
+    outs:
+    - path: ./data/processed/test.csv
+      hash: md5
+      md5: 386bc3abacf805470ba933c206e94e28
+      size: 127723
+    - path: ./data/processed/train.csv
+      hash: md5
+      md5: 7a06568c5d26ae58e5ae5ae233d73f54
+      size: 1008607
+  train:
+    cmd: python src/train.py
+    deps:
+    - path: ./data/processed/train.csv
+      hash: md5
+      md5: 7a06568c5d26ae58e5ae5ae233d73f54
+      size: 1008607
+    - path: src/train.py
+      hash: md5
+      md5: e525d2c04305940d2b39b3a93d494bae
+      size: 3229
+    params:
+      params.yaml:
+        train.C: 1.0
+        train.data.processed_data_dir: ./data/processed
+        train.max_features: 10000
+        train.model_dir: models
+        train.random_state: 42
+    outs:
+    - path: models/model.pkl
+      hash: md5
+      md5: e71a8ebc84972b116893e52c3fea09de
+      size: 462068
+    - path: models/run_id.txt
+      hash: md5
+      md5: ae13feb6dce14f6a001f03c9d31f8986
+      size: 33
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+    - path: ./data/processed/test.csv
+      hash: md5
+      md5: 386bc3abacf805470ba933c206e94e28
+      size: 127723
+    - path: models/model.pkl
+      hash: md5
+      md5: e71a8ebc84972b116893e52c3fea09de
+      size: 462068
+    - path: models/run_id.txt
+      hash: md5
+      md5: ae13feb6dce14f6a001f03c9d31f8986
+      size: 33
+    - path: src/evaluate.py
+      hash: md5
+      md5: 49d41caa65084724170f543545d740d2
+      size: 1608
+    params:
+      params.yaml:
+        train.data.processed_data_dir: ./data/processed
+        train.metrics_dir: metrics
+        train.model_dir: models
+    outs:
+    - path: metrics/scores.json
+      hash: md5
+      md5: db0c5a1723f9ff083b9a4f207b7e4b05
+      size: 158
