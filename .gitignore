@@ -1,0 +1,23 @@
+# Python env
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*\$py.class
+.pytest_cache/
+
+# DVC
+.dvc/cache/
+.dvc/tmp/
+.dvc/config.local
+
+# MLflow
+mlflow.db
+mlruns/
+mlartifacts/
+
+# Ignore (potentially) huge CSV files
+data/**/*.csv
+models/
+

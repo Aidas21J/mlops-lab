@@ -1,0 +1,44 @@
+stages:
+  prepare:
+    cmd: python src/prepare.py
+    deps:
+    - src/prepare.py
+    - ${train.data.raw_data_dir}/train.csv
+    - ${train.data.raw_data_dir}/test.csv
+    params:
+    - train.data.raw_data_dir
+    - train.data.processed_data_dir
+    - train.random_state
+    outs:
+    - ${train.data.processed_data_dir}/train.csv
+    - ${train.data.processed_data_dir}/test.csv
+
+  train:
+    cmd: python src/train.py
+    deps:
+    - src/train.py
+    - ${train.data.processed_data_dir}/train.csv
+    params:
+    - train.data.processed_data_dir
+    - train.C
+    - train.max_features
+    - train.random_state
+    - train.model_dir
+    outs:
+    - ${train.model_dir}/model.pkl
+    - ${train.model_dir}/run_id.txt
+
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+    - src/evaluate.py
+    - ${train.data.processed_data_dir}/test.csv
+    - ${train.model_dir}/model.pkl
+    - ${train.model_dir}/run_id.txt
+    params:
+    - train.data.processed_data_dir
+    - train.model_dir
+    - train.metrics_dir
+    metrics:
+    - ${train.metrics_dir}/scores.json:
+        cache: false
