@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: inference-service
+  namespace: {{ .Values.namespace }}
+spec:
+  type: NodePort
+  ports:
+  - port: {{ .Values.inference.port }}
+    targetPort: {{ .Values.inference.port }}
+    nodePort: {{ .Values.inference.nodePort }}
+  selector:
+    app: inference-server

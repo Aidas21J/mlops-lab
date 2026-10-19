@@ -33,9 +33,16 @@ resource "kind_cluster" "mlops_cluster" {
 
     node {
       role = "control-plane"
+      # MLflow server
       extra_port_mappings {
         container_port = 30000
         host_port      = 5005
+        protocol       = "TCP"
+      }
+      # Inference API
+      extra_port_mappings {
+        container_port = 30001
+        host_port      = 8008
         protocol       = "TCP"
       }
     }
