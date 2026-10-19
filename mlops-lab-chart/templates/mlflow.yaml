@@ -2,9 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mlflow-server
-  namespace: mlops-lab
+  namespace: {{ .Values.namespace }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.mlflow.replicaCount }}
   selector:
     matchLabels:
       app: mlflow-server
@@ -15,18 +15,18 @@ spec:
     spec:
       containers:
       - name: mlflow
-        image: ghcr.io/mlflow/mlflow:v3.17.0
+        image: "{{ .Values.mlflow.image }}"
         command: ["/bin/sh", "-c"]
         args:
           - |
             pip install --no-cache-dir psycopg2-binary
             mlflow server \
-              --backend-store-uri postgresql+psycopg2://mlflow:mlflowpassword@postgres:5432/mlflow_db \
+              --backend-store-uri postgresql+psycopg2://{{ .Values.postgres.db.user }}:{{ .Values.postgres.db.password }}@postgres:{{ .Values.postgres.port }}/{{ .Values.postgres.db.name }} \
               --default-artifact-root /tmp/mlflow/artifacts \
               --host 0.0.0.0 \
-              --port 5000
+              --port {{ .Values.mlflow.port }}
         ports:
-        - containerPort: 5000
+        - containerPort: {{ .Values.mlflow.port }}
           name: mlflow-port
         volumeMounts:
         - mountPath: /tmp/mlflow/artifacts
@@ -37,30 +37,29 @@ spec:
           claimName: mlflow-artifacts-pvc
 
 ---
-
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mlflow-artifacts-pvc
-  namespace: mlops-lab
+  namespace: {{ .Values.namespace }}
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
+      storage: {{ .Values.mlflow.storageSize }}
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
   name: mlflow-service
-  namespace: mlops-lab
+  namespace: {{ .Values.namespace }}
 spec:
   type: NodePort
   ports:
-  - port: 5000
-    targetPort: 5000
+  - port: {{ .Values.mlflow.port }}
+    targetPort: {{ .Values.mlflow.port }}
+    nodePort: {{ .Values.mlflow.nodePort }}
   selector:
     app: mlflow-server

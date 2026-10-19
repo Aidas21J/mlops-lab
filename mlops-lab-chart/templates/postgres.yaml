@@ -2,9 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: mlops-lab
+  namespace: {{ .Values.namespace }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.postgres.replicaCount }}
   selector:
     matchLabels:
       app: postgres
@@ -15,16 +15,16 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres:15-alpine
+        image: "{{ .Values.postgres.image }}"
         env:
         - name: POSTGRES_USER
-          value: mlflow
+          value: {{ .Values.postgres.db.user }}
         - name: POSTGRES_PASSWORD
-          value: mlflowpassword
+          value: {{ .Values.postgres.db.password }}
         - name: POSTGRES_DB
-          value: mlflow_db
+          value: {{ .Values.postgres.db.name }}
         ports:
-        - containerPort: 5432
+        - containerPort: {{ .Values.postgres.port }}
           name: postgres
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
@@ -35,29 +35,27 @@ spec:
           claimName: postgres-pvc
 
 ---
-
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
-  namespace: mlops-lab
+  namespace: {{ .Values.namespace }}
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: {{ .Values.postgres.storageSize }}
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
   name: postgres
-  namespace: mlops-lab
+  namespace: {{ .Values.namespace }}
 spec:
   ports:
-  - port: 5432
-    targetPort: 5432
+  - port: {{ .Values.postgres.port }}
+    targetPort: {{ .Values.postgres.port }}
   selector:
     app: postgres

@@ -1,0 +1,18 @@
+namespace: mlops-lab
+
+postgres:
+  image: postgres:15-alpine
+  replicaCount: 1
+  port: 5432
+  storageSize: 1Gi
+  db:
+    user: mlflow
+    password: mlflowpassword
+    name: mlflow_db
+
+mlflow:
+  image: ghcr.io/mlflow/mlflow:v3.17.0
+  replicaCount: 1
+  port: 5000
+  nodePort: 30000 # Must match containerPort in k8s/kind-config.yaml
+  storageSize: 2Gi
