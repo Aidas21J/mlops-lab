@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-server
+  namespace: mlops-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow-server
+  template:
+    metadata:
+      labels:
+        app: mlflow-server
+    spec:
+      containers:
+      - name: mlflow
+        image: ghcr.io/mlflow/mlflow:v3.17.0
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            pip install --no-cache-dir psycopg2-binary
+            mlflow server \
+              --backend-store-uri postgresql+psycopg2://mlflow:mlflowpassword@postgres:5432/mlflow_db \
+              --default-artifact-root /tmp/mlflow/artifacts \
+              --host 0.0.0.0 \
+              --port 5000
+        ports:
+        - containerPort: 5000
+          name: mlflow-port
+        volumeMounts:
+        - mountPath: /tmp/mlflow/artifacts
+          name: mlflow-artifacts
+      volumes:
+      - name: mlflow-artifacts
+        persistentVolumeClaim:
+          claimName: mlflow-artifacts-pvc
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mlflow-artifacts-pvc
+  namespace: mlops-lab
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow-service
+  namespace: mlops-lab
+spec:
+  type: NodePort
+  ports:
+  - port: 5000
+    targetPort: 5000
+  selector:
+    app: mlflow-server
