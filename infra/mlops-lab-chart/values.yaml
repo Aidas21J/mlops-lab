@@ -1,0 +1,24 @@
+namespace: mlops-lab
+
+postgres:
+  image: postgres:15-alpine
+  replicaCount: 1
+  port: 5432
+  storageSize: 1Gi
+  db:
+    user: mlflow
+    password: mlflowpassword
+    name: mlflow_db
+
+mlflow:
+  image: ghcr.io/mlflow/mlflow:v3.17.0
+  replicaCount: 1
+  port: 5000
+  nodePort: 30000
+  storageSize: 2Gi
+
+inference:
+  image: ghcr.io/aidas21j/mlops-lab/sentiment-analyzer-api:sha-05e0da7
+  replicaCount: 1
+  port: 8000
+  nodePort: 30001

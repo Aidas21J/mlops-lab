@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference-server
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.inference.replicaCount }}
+  selector:
+    matchLabels:
+      app: inference-server
+  template:
+    metadata:
+      labels:
+        app: inference-server
+    spec:
+      containers:
+      - name: inference
+        image: "{{ .Values.inference.image }}"
+        ports:
+        - containerPort: {{ .Values.inference.port }}
+          name: http
