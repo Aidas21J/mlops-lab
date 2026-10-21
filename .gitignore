@@ -28,5 +28,8 @@ infra/terraform.tfstate
 infra/terraform.tfstate.backup
 infra/*.tfplan
 
+# Terraform secrets
+infra/terraform.tfvars
+
 # Kubernetes
 infra/mlops-cluster-config

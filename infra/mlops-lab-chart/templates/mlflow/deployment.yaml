@@ -19,12 +19,18 @@ spec:
         command: ["/bin/sh", "-c"]
         args:
           - |
-            pip install --no-cache-dir psycopg2-binary
+            pip install --no-cache-dir psycopg2-binary mlflow[auth]
             mlflow server \
               --backend-store-uri postgresql+psycopg2://{{ .Values.postgres.db.user }}:{{ .Values.postgres.db.password }}@postgres:{{ .Values.postgres.port }}/{{ .Values.postgres.db.name }} \
               --default-artifact-root /tmp/mlflow/artifacts \
               --host 0.0.0.0 \
-              --port {{ .Values.mlflow.port }}
+              --port {{ .Values.mlflow.port }} \
+              --app-name basic-auth
+        env:
+        - name: MLFLOW_FLASK_SERVER_SECRET_KEY
+          value: "{{ .Values.mlflow.flaskSecretKey }}"
+        - name: MLFLOW_AUTH_ADMIN_PASSWORD
+          value: "{{ .Values.mlflow.adminPassword }}"
         ports:
         - containerPort: {{ .Values.mlflow.port }}
           name: mlflow-port

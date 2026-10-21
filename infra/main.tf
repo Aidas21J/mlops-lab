@@ -49,11 +49,32 @@ resource "kind_cluster" "mlops_cluster" {
   }
 }
 
+variable "mlflow_admin_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "flask_secret_key" {
+  type      = string
+  sensitive = true
+}
+
 resource "helm_release" "mlops_stack" {
   name             = "mlops-stack"
   chart            = "./mlops-lab-chart"
   namespace        = "mlops-lab"
   create_namespace = true
+
+  set = [
+    {
+      name  = "mlflow.flaskSecretKey"
+      value = var.flask_secret_key
+    },
+    {
+      name  = "mlflow.adminPassword"
+      value = var.mlflow_admin_password
+    },
+  ]
 
   depends_on = [kind_cluster.mlops_cluster]
 }

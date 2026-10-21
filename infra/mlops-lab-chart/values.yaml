@@ -16,6 +16,8 @@ mlflow:
   port: 5000
   nodePort: 30000
   storageSize: 2Gi
+  flaskSecretKey: ""
+  adminPassword: ""
 
 inference:
   image: ghcr.io/aidas21j/mlops-lab/sentiment-analyzer-api:sha-05e0da7
