@@ -23,30 +23,14 @@ provider "helm" {
   }
 }
 
-resource "kind_cluster" "mlops_cluster" {
-  name           = "mlops-cluster"
-  wait_for_ready = true
+variable "mlflow_host_port" {
+  type    = number
+  default = 5005
+}
 
-  kind_config {
-    kind        = "Cluster"
-    api_version  = "kind.x-k8s.io/v1alpha4"
-
-    node {
-      role = "control-plane"
-      # MLflow server
-      extra_port_mappings {
-        container_port = 30000
-        host_port      = 5005
-        protocol       = "TCP"
-      }
-      # Inference API
-      extra_port_mappings {
-        container_port = 30001
-        host_port      = 8008
-        protocol       = "TCP"
-      }
-    }
-  }
+variable "inference_host_port" {
+  type    = number
+  default = 8008
 }
 
 variable "mlflow_admin_password" {
@@ -57,6 +41,32 @@ variable "mlflow_admin_password" {
 variable "flask_secret_key" {
   type      = string
   sensitive = true
+}
+
+resource "kind_cluster" "mlops_cluster" {
+  name           = "mlops-cluster"
+  wait_for_ready = true
+
+  kind_config {
+    kind        = "Cluster"
+    api_version = "kind.x-k8s.io/v1alpha4"
+
+    node {
+      role = "control-plane"
+      # MLflow server
+      extra_port_mappings {
+        container_port = 30000
+        host_port      = var.mlflow_host_port
+        protocol       = "TCP"
+      }
+      # Inference API
+      extra_port_mappings {
+        container_port = 30001
+        host_port      = var.inference_host_port
+        protocol       = "TCP"
+      }
+    }
+  }
 }
 
 resource "helm_release" "mlops_stack" {
