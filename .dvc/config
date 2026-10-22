@@ -1,4 +1,4 @@
 [core]
     remote = localremote
 ['remote "localremote"']
-    url = /home/aidasj/dvcstore
+    url = /home/aidasj/dvcstore-lab
