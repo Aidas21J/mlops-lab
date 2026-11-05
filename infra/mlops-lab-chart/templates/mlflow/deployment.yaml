@@ -22,7 +22,8 @@ spec:
             pip install --no-cache-dir psycopg2-binary mlflow[auth]
             mlflow server \
               --backend-store-uri postgresql+psycopg2://{{ .Values.postgres.db.user }}:{{ .Values.postgres.db.password }}@postgres:{{ .Values.postgres.port }}/{{ .Values.postgres.db.name }} \
-              --default-artifact-root /tmp/mlflow/artifacts \
+              --artifacts-destination /tmp/mlflow/artifacts \
+              --serve-artifacts \
               --host 0.0.0.0 \
               --port {{ .Values.mlflow.port }} \
               --app-name basic-auth
