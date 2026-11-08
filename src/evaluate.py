@@ -8,8 +8,11 @@ import mlflow
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 
+PARAMS_PATH = os.getenv("PARAMS_PATH", "params.yaml")
+
+
 def evaluate() -> None:
-    with open("params.yaml") as f:
+    with open(PARAMS_PATH) as f:
         params = yaml.safe_load(f)["train"]
 
     DATA_DIR = params["data"]["processed_data_dir"]

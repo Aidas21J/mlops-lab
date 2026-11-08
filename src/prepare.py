@@ -3,8 +3,11 @@ import yaml
 import pandas as pd
 
 
+PARAMS_PATH = os.getenv("PARAMS_PATH", "params.yaml")
+
+
 def prepare() -> None:
-    with open("params.yaml") as f:
+    with open(PARAMS_PATH) as f:
         params = yaml.safe_load(f)["train"]
 
     RAW_DATA_DIR = params["data"]["raw_data_dir"]
@@ -13,7 +16,7 @@ def prepare() -> None:
 
     os.makedirs(OUT_DATA_DIR, exist_ok=True)
 
-    for split in ["train", "test"]:
+    for split in ["train", "validation", "test"]:
         print(f"Processing '{split}' split...")
 
         input_file = os.path.join(RAW_DATA_DIR, f"{split}.csv");

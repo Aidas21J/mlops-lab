@@ -4,6 +4,7 @@ stages:
     deps:
     - src/prepare.py
     - ${train.data.raw_data_dir}/train.csv
+    - ${train.data.raw_data_dir}/validation.csv
     - ${train.data.raw_data_dir}/test.csv
     params:
     - train.data.raw_data_dir
@@ -11,6 +12,7 @@ stages:
     - train.random_state
     outs:
     - ${train.data.processed_data_dir}/train.csv
+    - ${train.data.processed_data_dir}/validation.csv
     - ${train.data.processed_data_dir}/test.csv
 
   train:
@@ -18,12 +20,15 @@ stages:
     deps:
     - src/train.py
     - ${train.data.processed_data_dir}/train.csv
+    - ${train.data.processed_data_dir}/validation.csv
     params:
     - train.data.processed_data_dir
     - train.C
     - train.max_features
     - train.random_state
     - train.model_dir
+    - train.hpo.n_trials
+    - train.hpo.epochs
     outs:
     - ${train.model_dir}/model.pkl
     - ${train.model_dir}/run_id.txt

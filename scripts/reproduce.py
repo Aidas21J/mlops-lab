@@ -8,6 +8,8 @@ from pathlib import Path
 import mlflow
 import yaml
 
+
+PARAMS_PATH = os.getenv("PARAMS_PATH", "params.yaml")
 TRAIN_KEYS = {
     "random_state": int,
     "C": float,
@@ -46,7 +48,7 @@ def reproduce() -> None:
     try:
         run_command(["git", "checkout", "--quiet", commit])
 
-        with open("params.yaml") as f:
+        with open(PARAMS_PATH) as f:
             params = yaml.safe_load(f)
 
         MODEL_DIR = params["train"]["model_dir"]
@@ -62,7 +64,7 @@ def reproduce() -> None:
         params["train"]["random_seed"] = int(run_params["random_state"])
         params["train"]["C"] = float(run_params["C"])
         params["train"]["max_features"] = int(run_params["max_features"])
-        Path("params.yaml").write_text(yaml.safe_dump(params, sort_keys=False))
+        Path(PARAMS_PATH).write_text(yaml.safe_dump(params, sort_keys=False))
 
         run_command(["dvc", "repro", "--force"])
         new_id = Path(os.path.join(MODEL_DIR, "run_id.txt")).read_text().strip()

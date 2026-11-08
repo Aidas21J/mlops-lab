@@ -3,22 +3,20 @@ from pydantic import BaseModel
 import joblib
 import os
 from contextlib import asynccontextmanager
+import mlflow.sklearn
 
-model = None
-MODEL_PATH = "models/model.pkl"
+
+MODEL_URI = os.getenv("MODEL_URI", "models:/sentiment-analyzer@champion")
+state = { "model": None, "version": None }
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model
-    if os.path.exists(MODEL_PATH):
-        model = joblib.load(MODEL_PATH)
-    else:
-        print(f"Warning: model file ({MODEL_PATH}) was not found.")
-    
+    state["model"] = mlflow.sklearn.load_model(MODEL_URI)
+    state["version"] = mlflow.MlflowClient().get_model_version_by_alias("sentiment-analyzer", "champion").version
+
     yield
-    
-    model = None
-    print("Shutting down...")
+
 
 app = FastAPI(title="Movie review sentiment analysis API", version="1.0", lifespan=lifespan)
 
@@ -32,9 +30,17 @@ def read_root():
     return { "status": "online" }
 
 
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "model_version": state["version"] 
+    }
+
+
 @app.post("/predict")
 def predict(payload: MessageRequest):
-    global model
+    model = state["model"]
     if model is None:
         raise HTTPException(status_code=500, detail="Model is not loaded.")
     

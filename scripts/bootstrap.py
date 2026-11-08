@@ -4,8 +4,11 @@ import yaml
 from datasets import load_dataset
 
 
+PARAMS_PATH = os.getenv("PARAMS_PATH", "params.yaml")
+
+
 def bootstrap():
-    with open("params.yaml") as f:
+    with open(PARAMS_PATH) as f:
         params = yaml.safe_load(f)["train"]["data"]
 
     REPO_ID = params["repo_id"]
