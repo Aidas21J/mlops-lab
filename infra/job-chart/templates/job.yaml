@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: train-{{ .Release.Revision }}
+  namespace: {{ .Values.namespace }}
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: train
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command: ["sh", "-c"]
+        args:
+          - python scripts/bootstrap.py &&
+            python src/prepare.py &&
+            python src/train.py &&
+            python src/evaluate.py &&
+            python scripts/gate.py gate &&
+            python scripts/gate.py promote
+        env:
+        - { name: PARAMS_PATH, value: /config/params.yaml }
+        envFrom:
+        - configMapRef: { name: mlflow-config }
+        - secretRef:    { name: mlflow-credentials }
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+        volumeMounts: [{ name: params, mountPath: /config }]
+      volumes:
+      - name: params
+        configMap: { name: train-params }

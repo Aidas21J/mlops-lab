@@ -24,6 +24,7 @@ spec:
               --backend-store-uri postgresql+psycopg2://{{ .Values.postgres.db.user }}:{{ .Values.postgres.db.password }}@postgres:{{ .Values.postgres.port }}/{{ .Values.postgres.db.name }} \
               --artifacts-destination /tmp/mlflow/artifacts \
               --serve-artifacts \
+              --allowed-hosts "localhost:*,127.0.0.1:*,mlflow-service:*,mlflow-service.mlops-lab.svc.cluster.local:*" \
               --host 0.0.0.0 \
               --port {{ .Values.mlflow.port }} \
               --app-name basic-auth

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: train-params
+  namespace: {{ .Values.namespace }}
+data:
+  params.yaml: |
+{{ toYaml .Values.params | indent 4 }}

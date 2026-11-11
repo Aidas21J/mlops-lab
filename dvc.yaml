@@ -23,7 +23,6 @@ stages:
     - ${train.data.processed_data_dir}/validation.csv
     params:
     - train.data.processed_data_dir
-    - train.C
     - train.max_features
     - train.random_state
     - train.model_dir

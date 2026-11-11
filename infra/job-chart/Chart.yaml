@@ -1,0 +1,4 @@
+apiVersion: v2
+name: train-job
+version: 0.1.0
+description: Sentiment model training Job (train, evaluate, gate, promote)

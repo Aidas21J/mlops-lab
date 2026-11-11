@@ -1,0 +1,23 @@
+namespace: mlops-lab
+image:
+  repository: ghcr.io/aidas21j/mlops-lab/sentiment-trainer
+  tag: sha-1921f137
+resources:
+  requests: { cpu: "1", memory: 1Gi }
+  limits:   { cpu: "2", memory: 2Gi }
+params:
+  train:
+    data:
+      repo_id: "cornell-movie-review-data/rotten_tomatoes"
+      commit_hash: "aa13bc287fa6fcab6daf52f0dfb9994269ffea28"
+      raw_data_dir: "./data/raw"
+      processed_data_dir: "./data/processed"
+    random_state: 42
+    model_dir: "models"
+    metrics_dir: "metrics"
+    hpo:
+      n_trials: 8
+      epochs: 10
+  gate:
+    metric: "eval-f1"
+    min: 0.75

@@ -57,9 +57,7 @@ def train() -> None:
     
     DATA_DIR = params["data"]["processed_data_dir"]
     RAW_DIR = params["data"]["raw_data_dir"]
-    MAX_FEATURES = params["max_features"]
     RANDOM_STATE = params["random_state"]
-    C = params["C"]
     EPOCHS = params["hpo"]["epochs"]
     N_TRIALS = params["hpo"]["n_trials"]
     MODEL_DIR = params["model_dir"]
@@ -77,13 +75,13 @@ def train() -> None:
 
     mlflow.set_experiment("sentiment-analysis-u2")
     
-    with mlflow.start_run() as run:
+    with mlflow.start_run(run_name="hpo-parent", log_system_metrics=True) as run:
         mlflow.log_params(pd.json_normalize(params, sep=".").iloc[0].to_dict())
 
         mlflow.set_tags({
             "git_commit": git_commit(),
             "dvc_raw_md5": dvc_md5(Path(os.path.join(RAW_DIR, "train.csv.dvc"))),
-            "model_family": "Term Frequency-Inverse Document Frequency + Logistic Regression",
+            "model_family": "TF-IDF + SGDClassifier (log loss)",
         })
 
         mlflow.log_input(
@@ -111,12 +109,14 @@ def train() -> None:
         mlflow.log_params({f"best_{k}": v for k, v in study.best_params.items()})
 
         model = fit(
-                train_input,
-                train_expected,
-                study.best_params["max_features"],
-                study.best_params["alpha"],
-                EPOCHS,
-                RANDOM_STATE
+            train_input,
+            train_expected,
+            study.best_params["max_features"],
+            study.best_params["alpha"],
+            EPOCHS,
+            RANDOM_STATE,
+            val=(validation_input, validation_expected),
+            log_steps=True
         )
         sig = infer_signature(train_input.head(5).to_frame(), model.predict(train_input.head(5)))
         info = mlflow.sklearn.log_model(
