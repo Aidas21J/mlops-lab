@@ -1,0 +1,83 @@
+name: rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Model version to roll back to (leave empty = previous champion)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cluster-deploy
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: self-hosted
+    timeout-minutes: 10
+    env:
+      MLFLOW_TRACKING_URI: http://localhost:5005
+      MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
+      MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
+      TARGET_VERSION: ${{ inputs.version }}
+      NAMESPACE: mlops-lab
+      API_URL: http://localhost:8008
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install MLflow client
+        run: pip install mlflow-skinny==3.17.0 pyyaml
+
+      - name: Validate input
+        run: |
+          if [ -n "$TARGET_VERSION" ] && ! [[ "$TARGET_VERSION" =~ ^[0-9]+$ ]]; then
+            echo "version must be a number, got: $TARGET_VERSION"; exit 1
+          fi
+
+      - name: Current champion
+        id: before
+        run: |
+          v=$(python -c "from mlflow import MlflowClient; print(MlflowClient().get_model_version_by_alias('sentiment-analyzer','champion').version)")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "champion before rollback: v$v"
+
+      - name: Move @champion alias
+        id: rollback
+        run: |
+          python scripts/gate.py rollback $TARGET_VERSION
+          v=$(python -c "from mlflow import MlflowClient; print(MlflowClient().get_model_version_by_alias('sentiment-analyzer','champion').version)")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Restart inference pods (they resolve @champion at startup)
+        run: |
+          kubectl rollout restart deployment/inference-server -n "$NAMESPACE"
+          kubectl rollout status deployment/inference-server -n "$NAMESPACE" --timeout=180s
+
+      - name: Verify the API serves the rolled-back version
+        run: |
+          expected="${{ steps.rollback.outputs.version }}"
+          served=$(curl -fsS --retry 10 --retry-delay 3 --retry-connrefused "$API_URL/health" \
+            | python -c "import sys, json; print(json.load(sys.stdin)['model_version'])")
+          echo "expected v$expected, API reports v$served"
+          [ "$served" = "$expected" ]
+          curl -fsS -X POST "$API_URL/predict" -H "Content-Type: application/json" \
+            -d '{"message": "smoke test after rollback"}'
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Rollback"
+            echo "| | model version |"
+            echo "|---|---|"
+            echo "| before | v${{ steps.before.outputs.version }} |"
+            echo "| after  | v${{ steps.rollback.outputs.version }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
