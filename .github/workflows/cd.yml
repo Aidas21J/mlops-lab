@@ -1,0 +1,48 @@
+name: cd
+on: { push: { branches: ["**"] }, workflow_dispatch: {} }
+concurrency: cd
+jobs:
+  train-gate-deploy:
+    runs-on: self-hosted
+    permissions: { contents: write, packages: write }
+    env:
+      MLFLOW_TRACKING_URI: http://localhost:5005
+      MLFLOW_TRACKING_USERNAME: admin
+      MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - run: pytest -q
+      - run: dvc pull && dvc repro                 # self-hosted: localremote is reachable
+      - name: Quality gate
+        run: python scripts/gate.py gate           # exit 1 = red run, nothing below runs
+      - name: Promote
+        id: promote
+        if: github.ref == 'refs/heads/main'
+        run: python scripts/gate.py promote
+      - name: Build and push
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          IMG=ghcr.io/${{ github.repository_owner }}/mlops-lab/sentiment-analyzer-api:sha-${GITHUB_SHA::7}
+          docker build -f docker/Dockerfile -t $IMG . && docker push $IMG
+          sed -i "s|\(sentiment-analyzer-api:\).*|\1sha-${GITHUB_SHA::7}|" k8s/deployment.yaml
+      - name: Deploy
+        if: github.ref == 'refs/heads/main'
+        run: |
+          kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml
+          kubectl rollout restart deploy/inference-server -n mlops-lab
+          kubectl rollout status deploy/inference-server -n mlops-lab --timeout=180s
+          curl -fsS localhost:8008/health
+      - name: Commit manifest
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name ci && git config user.email ci@users.noreply.github.com
+          git commit -am "ci: deploy ${GITHUB_SHA::7} [skip ci]" && git push
+      - name: Auto-rollback
+        if: failure() && steps.promote.conclusion == 'success'
+        run: |
+          python scripts/gate.py rollback
+          kubectl rollout restart deploy/inference-server -n mlops-lab
