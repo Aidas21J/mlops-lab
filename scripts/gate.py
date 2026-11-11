@@ -1,46 +1,67 @@
+import json
 import os
 import sys
-import json
+
 import yaml
 from mlflow import MlflowClient
 
-
 NAME = "sentiment-analyzer"
-c = MlflowClient()
-params = yaml.safe_load(open(os.getenv("PARAMS_PATH", "params.yaml")))
 
 
-def gate():
-    metrics_path = os.path.join(params["train"]["metrics_dir"], "scores.json")
-    metrics = json.load(open(metrics_path))
+def load_params() -> dict:
+    with open(os.getenv("PARAMS_PATH", "params.yaml")) as f:
+        return yaml.safe_load(f)
+
+
+def gate() -> bool:
+    params = load_params()
     key = params["gate"]["metric"]
     threshold = float(os.getenv("GATE_MIN", params["gate"]["min"]))
-    print(f"{key}={metrics[key]:.4f} threshold={threshold}")
-    sys.exit(0 if metrics[key] >= threshold else 1)
+    with open("metrics/scores.json") as f:
+        value = json.load(f)[key]
+    print(f"{key}={value:.4f} threshold={threshold}")
+    return value >= threshold
 
 
-def promote():
-    model_path = os.path.join(params["train"]["model_dir"], "run_id.txt")
-    run_id = open(model_path).read().strip()
-    new = next(v for v in c.search_model_versions(f"name='{NAME}'") if v.run_id == run_id)
+def promote() -> None:
+    client = MlflowClient()
+    with open("models/run_id.txt") as f:
+        run_id = f.read().strip()
+    versions = [v for v in client.search_model_versions(f"name='{NAME}'") if v.run_id == run_id]
+    if not versions:
+        sys.exit(f"no registered version found for run {run_id}")
+    new = versions[0]
     try:
-        old = c.get_model_version_by_alias(NAME, "champion").version
-        c.set_model_version_tag(NAME, new.version, "replaced", old)
+        old = client.get_model_version_by_alias(NAME, "champion").version
+        client.set_model_version_tag(NAME, new.version, "replaced", old)
     except Exception:
-        pass
-    c.set_registered_model_alias(NAME, "champion", new.version)
+        pass  # first ever champion
+    client.set_registered_model_alias(NAME, "champion", new.version)
     print("champion ->", new.version)
 
 
-def rollback():
-    cur = c.get_model_version_by_alias(NAME, "champion")
-    prev = sys.argv[2] if len(sys.argv) > 2 else cur.tags["replaced"]
-    c.set_registered_model_alias(NAME, "champion", prev)
-    print("champion rolled back ->", prev)
+def rollback(version: str | None = None) -> None:
+    client = MlflowClient()
+    if version is None:
+        current = client.get_model_version_by_alias(NAME, "champion")
+        version = current.tags.get("replaced")
+        if not version:
+            sys.exit("current champion has no 'replaced' tag; pass a version explicitly")
+    client.set_registered_model_alias(NAME, "champion", str(version))
+    print("champion rolled back ->", version)
 
 
-{
-    "gate": gate,
-    "promote": promote,
-    "rollback": rollback
-}[sys.argv[1]]()
+def main(argv: list[str]) -> None:
+    cmd = argv[1] if len(argv) > 1 else ""
+    if cmd == "gate":
+        sys.exit(0 if gate() else 1)
+    elif cmd == "promote":
+        promote()
+    elif cmd == "rollback":
+        rollback(argv[2] if len(argv) > 2 else None)
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main(sys.argv)
