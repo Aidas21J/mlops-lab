@@ -1,6 +1,11 @@
 {
-  "n": 100,
-  "p50_ms": 4.5969534912728705,
-  "p95_ms": 5.51600149992737,
-  "throughput_rps": 41.76533800850105
+  "model_version": null,
+  "sequential_requests": 100,
+  "p50_ms": 5.53,
+  "p95_ms": 8.03,
+  "p99_ms": 8.12,
+  "max_ms": 8.12,
+  "concurrent_requests": 200,
+  "concurrent_workers": 10,
+  "throughput_rps": 216.2
 }
